@@ -1791,7 +1791,7 @@ void Client::Handle_OP_AcceptNewTask(const EQApplicationPacket *app)
 void Client::Handle_OP_AcceptNewSharedTask(const EQApplicationPacket *app)
 {
 	if (app->size != sizeof(AcceptNewSharedTask_Struct)) {
-		Log(Logs::General, Logs::None, "Size mismatch in OP_AcceptNewSharedTask expected %i got %i",
+		LogError("Size mismatch in OP_AcceptNewSharedTask expected:[{}] got:[{}]",
 			sizeof(AcceptNewSharedTask_Struct), app->size);
 		DumpPacket(app);
 		return;
