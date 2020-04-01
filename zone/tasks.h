@@ -269,6 +269,7 @@ public:
 	bool AppropriateLevel(int TaskID, int PlayerLevel);
 	int GetTaskMinLevel(int TaskID);
 	int GetTaskMaxLevel(int TaskID);
+	std::string GetTaskName(uint32 task_id);
 	void TaskSetSelector(Client *c, ClientTaskState *state, Mob *mob, int TaskSetID, bool shared = false);
 	void TaskQuestSetSelector(Client *c, ClientTaskState *state, Mob *mob, int count, int *tasks, bool shared = false); // task list provided by QuestManager (perl/lua)
 	void SendActiveTasksToClient(Client *c, bool TaskComplete=false);
