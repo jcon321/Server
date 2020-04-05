@@ -592,6 +592,7 @@ void SharedTask::SetCLESharedTasks()
 void SharedTask::Save()
 {
 	const char *ERR_MYSQLERROR = "[TASKS]Error in TaskManager::SaveClientState %s";
+	bool rollback = false;
 	database.TransactionBegin();
 	std::string query; // simple queries
 	fmt::basic_memory_buffer<char> out; // queries where we loop over stuff
@@ -601,8 +602,10 @@ void SharedTask::Save()
 				    "is_locked, is_completed) VALUES ({}, {}, {}, {}, {:d}. {:d})",
 				    id, task_id, GetAcceptedTime(), instance_id, locked, completed);
 		auto res = database.QueryDatabase(query);
-		if (!res.Success())
+		if (!res.Success()) {
 			Log(Logs::General, Logs::Error, ERR_MYSQLERROR, res.ErrorMessage().c_str());
+			rollback = true;
+		}
 		else
 			task_state.Updated = false;
 	}
@@ -631,6 +634,7 @@ void SharedTask::Save()
 		auto res = database.QueryDatabase(query);
 		if (!res.Success()) {
 			Log(Logs::General, Logs::Error, ERR_MYSQLERROR, res.ErrorMessage().c_str());
+			rollback = true;
 		} else {
 			for (int i = 0; i < max; ++i)
 				task_state.Activity[i].Updated = false;
@@ -639,7 +643,11 @@ void SharedTask::Save()
 
 	if (members.update) {
 		query = fmt::format("DELETE FROM `shared_task_members` WHERE `shared_task_id` = {}", id);
-		database.QueryDatabase(query);
+		auto res = database.QueryDatabase(query);
+		if (!res.Success()) {
+			Log(Logs::General, Logs::Error, ERR_MYSQLERROR, res.ErrorMessage().c_str());
+			rollback = true;
+		}
 
 		fmt::format_to(out, "INSERT INTO `shared_task_members` (shared_task_id, character_id, character_name, "
 				    "is_leader) VALUES ");
@@ -654,14 +662,21 @@ void SharedTask::Save()
 		}
 		query = fmt::to_string(out);
 		out.clear();
-		auto res = database.QueryDatabase(query);
-		if (!res.Success())
+		res = database.QueryDatabase(query);
+		if (!res.Success()) {
 			Log(Logs::General, Logs::Error, ERR_MYSQLERROR, res.ErrorMessage().c_str());
+			rollback = true;
+		}
 		else
 			members.update = false;
 	}
 
-	database.TransactionCommit();
+	if (!rollback) {
+		database.TransactionCommit();
+	}
+	else {
+		database.TransactionRollback();
+	}
 
 	// TODO: zone does some shit about completed tasks, is this for task history? Can we make zone do this?
 }
