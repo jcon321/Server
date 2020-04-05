@@ -599,7 +599,7 @@ void SharedTask::Save()
 
 	if (task_state.Updated) {
 		query = fmt::format("REPLACE INTO shared_task_state (id, task_id, accepted_time, instance_id, "
-				    "is_locked, is_completed) VALUES ({}, {}, {}, {}, {:d}. {:d})",
+				    "is_locked, is_completed) VALUES ({}, {}, {}, {}, {:d}, {:d})",
 				    id, task_id, GetAcceptedTime(), instance_id, locked, completed);
 		auto res = database.QueryDatabase(query);
 		if (!res.Success()) {
