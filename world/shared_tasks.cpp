@@ -96,24 +96,6 @@ void SharedTaskManager::HandleTaskRequest(ServerPacket *pack)
 
 	task.AddMember(leader_name, cle_leader, cle_leader->CharID(), true);
 
-	if (players.empty()) {
-		// send instant success to leader
-		SerializeBuffer buf(10);
-		buf.WriteInt32(id);				// shared task's ID
-		buf.WriteInt32(task_id);		// ID of the task's data
-		buf.WriteInt32(npc_id);			// NPC we're requesting from
-		buf.WriteInt32(task.GetInstanceID());	// instance ID if we had to create one
-		buf.WriteInt32(task.GetAcceptedTime());	// time we accepted it
-		buf.WriteString(leader_name);	// leader's name
-		buf.WriteInt32(0); // member list minus leader
-
-		auto pack = new ServerPacket(ServerOP_TaskGrant, buf);
-		zoneserver_list.SendPacket(cle_leader->zone(), cle_leader->instance(), pack);
-		safe_delete(pack);
-
-		task.SetCLESharedTasks();
-		return;
-	}
 
 	for (auto &&name : players) {
 		// look up CLEs by name, tell them we need to know if they can be added
