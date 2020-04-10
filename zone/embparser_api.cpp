@@ -2407,16 +2407,16 @@ XS(XS__assigntask) {
 	dXSARGS;
 	unsigned int task_id;
 	bool         enforce_level_requirement = false;
-	if (items == 1 || items == 2) {
+	bool		 shared = false;
+	if (items == 1 || items == 2 || items == 3) {
 		task_id = (int) SvIV(ST(0));
-		if (items == 2) {
-			if ((int) SvIV(ST(1)) == 1) {
-				enforce_level_requirement = true;
-			}
-		}
-		quest_manager.assigntask(task_id, enforce_level_requirement);
+		if (items >= 2)
+			enforce_level_requirement = (bool) SvTRUE(ST(1));
+		if (items == 3) 
+			shared = (bool)SvTRUE(ST(2));
+		quest_manager.assigntask(task_id, enforce_level_requirement, shared);
 	} else {
-		Perl_croak(aTHX_ "Usage: quest::assigntask(int task_id, [bool enforce_level_requirement = false])");
+		Perl_croak(aTHX_ "Usage: quest::assigntask(int task_id, [bool enforce_level_requirement = false], [bool shared = false])");
 	}
 
 	XSRETURN_EMPTY;

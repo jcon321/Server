@@ -1130,6 +1130,11 @@ void Lua_Client::AssignTask(int task, int npc_id, bool enforce_level_requirement
 	self->AssignTask(task, npc_id, enforce_level_requirement);
 }
 
+void Lua_Client::AssignTask(int task, int npc_id, bool enforce_level_requirement, bool shared) {
+	Lua_Safe_Call_Void();
+	self->AssignTask(task, npc_id, enforce_level_requirement, shared);
+}
+
 void Lua_Client::FailTask(int task) {
 	Lua_Safe_Call_Void();
 	self->FailTask(task);
@@ -1799,6 +1804,7 @@ luabind::scope lua_register_client() {
 		.def("UpdateTaskActivity", (void(Lua_Client::*)(int,int,int))&Lua_Client::UpdateTaskActivity)
 		.def("AssignTask", (void(Lua_Client::*)(int,int))&Lua_Client::AssignTask)
 		.def("AssignTask", (void(Lua_Client::*)(int,int,bool))&Lua_Client::AssignTask)
+		.def("AssignTask", (void(Lua_Client::*)(int, int, bool, bool))& Lua_Client::AssignTask)
 		.def("FailTask", (void(Lua_Client::*)(int))&Lua_Client::FailTask)
 		.def("IsTaskCompleted", (bool(Lua_Client::*)(int))&Lua_Client::IsTaskCompleted)
 		.def("IsTaskActive", (bool(Lua_Client::*)(int))&Lua_Client::IsTaskActive)

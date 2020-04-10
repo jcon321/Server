@@ -253,6 +253,7 @@ public:
 	void UpdateTaskActivity(int task, int activity, int count);
 	void AssignTask(int task, int npc_id);
 	void AssignTask(int task, int npc_id, bool enforce_level_requirement);
+	void AssignTask(int task, int npc_id, bool enforce_level_requirement, bool shared);
 	void FailTask(int task);
 	bool IsTaskCompleted(int task);
 	bool IsTaskActive(int task);

@@ -596,6 +596,7 @@ void lua_task_selector(luabind::adl::object table) {
 }
 
 void lua_task_selector(luabind::adl::object table, bool shared) {
+	LogTasks("jc-shared RequestTaskSelector #1 --- lua_task_selector(luabind::adl::object table, bool shared) in lua_general.cpp");
 	if(luabind::type(table) != LUA_TTABLE) {
 		return;
 	}
@@ -709,6 +710,14 @@ void lua_task_explored_area(int explore_id) {
 
 void lua_assign_task(int task_id) {
 	quest_manager.assigntask(task_id);
+}
+
+void lua_assign_task(int task_id, bool enforce_level_requirements) {
+	quest_manager.assigntask(task_id, enforce_level_requirements);
+}
+
+void lua_assign_task(int task_id, bool enforce_level_requirements, bool shared) {
+	quest_manager.assigntask(task_id, enforce_level_requirements, shared);
 }
 
 void lua_fail_task(int task_id) {
@@ -1746,7 +1755,9 @@ luabind::scope lua_register_general() {
 		luabind::def("update_task_activity", &lua_update_task_activity),
 		luabind::def("reset_task_activity", &lua_reset_task_activity),
 		luabind::def("task_explored_area", &lua_task_explored_area),
-		luabind::def("assign_task", &lua_assign_task),
+		luabind::def("assign_task", (void(*)(int)) &lua_assign_task),
+		luabind::def("assign_task", (void(*)(int, bool))&lua_assign_task),
+		luabind::def("assign_task", (void(*)(int, bool, bool))&lua_assign_task),
 		luabind::def("fail_task", &lua_fail_task),
 		luabind::def("task_time_left", &lua_task_time_left),
 		luabind::def("is_task_completed", &lua_is_task_completed),

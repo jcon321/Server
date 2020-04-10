@@ -5036,16 +5036,22 @@ XS(XS_Client_GetTaskActivityDoneCount) {
 XS(XS_Client_AssignTask); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Client_AssignTask) {
 	dXSARGS;
-	if (items != 3 && items != 4)
-		Perl_croak(aTHX_ "Usage: Client::AssignTask(THIS, int task_id, int npc_id, [bool enforce_level_requirement = false])");
+	if (items != 3 && items != 4 && items != 5)
+		Perl_croak(aTHX_ "Usage: Client::AssignTask(THIS, int task_id, int npc_id, [bool enforce_level_requirement = false], [bool shared = false])");
 	{
 		Client *THIS;
 		int  TaskID                    = (int) SvIV(ST(1));
 		int  NPCID                     = (int) SvIV(ST(2));
 		bool enforce_level_requirement = false;
-		if (items == 4) {
+		bool shared = false;
+		if (items >= 4) {
 			if ((int) SvIV(ST(3)) == 1) {
 				enforce_level_requirement = true;
+			}
+		}
+		if (items == 5) {
+			if ((int)SvIV(ST(4)) == 1) {
+				shared = true;
 			}
 		}
 		if (sv_derived_from(ST(0), "Client")) {
@@ -5056,7 +5062,7 @@ XS(XS_Client_AssignTask) {
 		if (THIS == nullptr)
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		THIS->AssignTask(TaskID, NPCID, enforce_level_requirement);
+		THIS->AssignTask(TaskID, NPCID, enforce_level_requirement, shared);
 	}
 	XSRETURN_EMPTY;
 }
