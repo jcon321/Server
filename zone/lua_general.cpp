@@ -596,7 +596,6 @@ void lua_task_selector(luabind::adl::object table) {
 }
 
 void lua_task_selector(luabind::adl::object table, bool shared) {
-	LogTasks("jc-shared RequestTaskSelector #1 --- lua_task_selector(luabind::adl::object table, bool shared) in lua_general.cpp");
 	if(luabind::type(table) != LUA_TTABLE) {
 		return;
 	}
