@@ -3757,6 +3757,7 @@ void ClientTaskState::RequestSharedTask(Client *c, int TaskID, int NPCID, bool e
 	}
 
 	if (!taskmanager->IsTaskRepeatable(TaskID) && IsTaskCompleted(TaskID))
+		c->Message(Chat::Red, "You already have completed this task.");
 		return;
 
 	if (task->replay_group) {
