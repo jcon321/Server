@@ -633,6 +633,7 @@ public:
 	void MovePC(uint32 zoneID, float x, float y, float z, float heading, uint8 ignorerestrictions = 0, ZoneMode zm = ZoneSolicited);
 	void MovePC(float x, float y, float z, float heading, uint8 ignorerestrictions = 0, ZoneMode zm = ZoneSolicited);
 	void MovePC(uint32 zoneID, uint32 instanceID, float x, float y, float z, float heading, uint8 ignorerestrictions = 0, ZoneMode zm = ZoneSolicited);
+	void SendToGuildHall();
 	void AssignToInstance(uint16 instance_id);
 	void RemoveFromInstance(uint16 instance_id);
 	void WhoAll();
@@ -1299,6 +1300,8 @@ public:
 	void SendHPUpdateMarquee();
 
 	void CheckRegionTypeChanges();
+
+	 WaterRegionType GetLastRegion() { return last_region_type; }
 
 	int32 CalcATK();
 

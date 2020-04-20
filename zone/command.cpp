@@ -4246,7 +4246,7 @@ void command_reloadworld(Client *c, const Seperator *sep)
 		c->Message(Chat::White, "Reloading quest cache worldwide.");
 	else
 		c->Message(Chat::White, "Reloading quest cache and repopping zones worldwide.");
-	
+
 	auto pack = new ServerPacket(ServerOP_ReloadWorld, sizeof(ReloadWorld_Struct));
 	ReloadWorld_Struct* RW = (ReloadWorld_Struct*) pack->pBuffer;
 	RW->Option = world_repop;
@@ -6606,7 +6606,7 @@ void command_editmassrespawn(Client* c, const Seperator* sep)
 		if (change_respawn_seconds > 0) {
 
 			if (change_apply) {
-				
+
 				results = database.QueryDatabase(
 					fmt::format(
 						SQL(
@@ -7924,7 +7924,7 @@ void command_npceditmass(Client *c, const Seperator *sep)
 		c->Message(Chat::White, "#npceditmass search_column [exact_match: =]search_value change_column change_value (apply)");
 		return;
 	}
-	
+
 	std::string query = SQL(
 		SELECT
 				COLUMN_NAME
@@ -8045,7 +8045,7 @@ void command_npceditmass(Client *c, const Seperator *sep)
 				continue;
 			}
 		}
-		
+
 		c->Message(
 			Chat::Yellow,
 			fmt::format(
