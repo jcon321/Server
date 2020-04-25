@@ -500,6 +500,12 @@ void SharedTaskManager::DestroySharedTask(int id)
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
 	}
+	query = StringFormat("DELETE FROM shared_task_members WHERE shared_task_id = %i", id);
+	results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
+	}
+
 
 	return;
 }
