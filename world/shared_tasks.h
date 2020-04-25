@@ -36,6 +36,7 @@ public:
 	~SharedTask() {}
 
 	void AddMember(std::string name, ClientListEntry *cle = nullptr, int char_id = 0, bool leader = false);
+	void RemoveMember(std::string name);
 	void MemberLeftGame(ClientListEntry *cle);
 	inline const std::string &GetLeaderName() const { return leader_name; }
 	inline SharedTaskMember *GetLeader() {
@@ -91,6 +92,7 @@ public:
 
 	bool LoadSharedTaskState();
 	bool LoadSharedTasks(int single_task = 0);
+	void DestroySharedTask(int id);
 
 	bool AppropriateLevel(int id, int level) const;
 
@@ -122,6 +124,7 @@ public:
 	void HandleTaskRequest(ServerPacket *pack);
 	void HandleTaskZoneCreated(ServerPacket *pack);
 	void HandleTaskActivityUpdate(ServerPacket *pack);
+	void HandleTaskRemovePlayer(ServerPacket* pack);
 
 	void Process();
 

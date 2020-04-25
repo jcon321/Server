@@ -124,12 +124,10 @@ public:
 
 	void SendActivityUpdate(int activity_id, int value = 1);
 
-	void AddMember(std::string name, Mob *entity = nullptr, bool leader = false)
-	{
-		members.push_back({name, entity, leader});
-		if (leader)
-			leader_name = name;
-	}
+	void AddMember(std::string name, Mob* entity = nullptr, bool leader = false);
+
+	void RemoveSelf(Client* c, int shared_task_id);
+	void SendRemoveMember(Client* c, int shared_task_id);
 
 	void SendMembersList(Client *to) const;
 

@@ -1298,6 +1298,11 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		shared_tasks.HandleTaskActivityUpdate(pack);
 		break;
 	}
+	case ServerOP_TaskRemovePlayer:
+	{
+		shared_tasks.HandleTaskRemovePlayer(pack);
+		break;
+	}
 	default:
 	{
 		LogInfo("Unknown ServerOPcode from zone {:#04x}, size [{}]", pack->opcode, pack->size);

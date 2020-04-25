@@ -229,6 +229,27 @@ void SharedTaskManager::HandleTaskActivityUpdate(ServerPacket *pack)
 }
 
 /*
+* Figures out which SharedTask and then calls RemoveMember
+*/
+void SharedTaskManager::HandleTaskRemovePlayer(ServerPacket* pack) 
+{
+	LogInfo("jc-shared CancelTask #2 --- void SharedTaskManager::HandleTaskRemovePlayer(ServerPacket* pack) in shared_tasks.cpp in world");
+	if (!pack)
+		return;
+	if (pack->size != sizeof(ServerSharedTaskMember_Struct))
+		return;
+
+	auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
+
+	auto task = GetSharedTask(update->id);
+
+	if (!task) // guess it wasn't loaded?
+		return;
+
+	task->RemoveMember(update->name);
+}
+
+/*
  * Loads in the tasks and task_activity tables
  * We limit to shared to save some memory
  * This can be called while reloading tasks (because deving etc)
@@ -459,6 +480,30 @@ bool SharedTaskManager::LoadSharedTaskState()
 	return true;
 }
 
+
+// 
+void SharedTaskManager::DestroySharedTask(int id)
+{
+	LogInfo("jc-shared CancelTask #4 --- void SharedTaskManager::DestroySharedTask(int id) in shared_tasks.cpp in world");
+	// remove from map
+	tasks.erase(id);
+
+	// remove from database
+	const char* ERR_MYSQLERROR = "[TASKS]Error in TaskManager::DestroySharedTask %s";
+	std::string query = StringFormat("DELETE FROM shared_task_activities WHERE shared_task_id = %i", id);
+	auto results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
+	}
+	query = StringFormat("DELETE FROM shared_task_state WHERE task_id = %i", id);
+	results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
+	}
+
+	return;
+}
+
 /*
  * Return the next unused ID
  * Hopefully this does not grow too large.
@@ -554,6 +599,50 @@ void SharedTask::MemberLeftGame(ClientListEntry *cle)
 		return;
 
 	it->cle = nullptr;
+}
+
+/*
+* Removes a player from this shared task and instance (this specific player has already been removed from shared_task_members table by zone)
+* jc-todo - Handle switching leader if so.
+* jc-todo - Handle 2 minute min required players
+*/
+void SharedTask::RemoveMember(std::string name) 
+{
+	LogInfo("jc-shared CancelTask #3 --- void SharedTask::RemoveMember(std::string name) in shared_tasks.cpp in world");
+	int char_id = 0;
+	// cleanup members.list
+	std::vector<SharedTaskMember>::iterator itm = members.list.begin();
+	while (itm != members.list.end()) {
+		if (itm->name == name) {
+			char_id = itm->char_id;
+			members.list.erase(itm);
+			break;
+		}
+	}
+
+	// remove from instance
+	if (instance_id) {
+		// TODO shared_tasks.RemovePlayerFromInsance(instance_id, char_id);
+	}
+
+	// remove from char_ids
+	std::vector<int>::iterator itc = std::find(char_ids.begin(), char_ids.end(), char_id);
+	if (itc != char_ids.end())
+		char_ids.erase(itc);
+
+	// cleanup cle
+	auto cle_member = client_list.FindCharacter(leader_name.c_str());
+	cle_member->SetCurrentSharedTaskID(0);
+
+	// if this is final member just Destroy the task now and return
+	if (members.list.empty()) {
+		shared_tasks.DestroySharedTask(task_id);
+		return;
+	}
+
+	// if leader pass onto next member (separate function)
+
+	// is task still above min req players (separate function)
 }
 
 /*

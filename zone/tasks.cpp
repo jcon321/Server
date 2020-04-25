@@ -3555,49 +3555,51 @@ void ClientTaskState::RemoveTask(Client *c, int sequenceNumber, TaskType type)
 	int task_id = -1;
 	switch (type) {
 	case TaskType::Task:
+	{
 		if (sequenceNumber == 0)
 			task_id = ActiveTask.TaskID;
-		break;
-	case TaskType::Quest:
-		if (sequenceNumber < MAXACTIVEQUESTS)
-			task_id = ActiveQuests[sequenceNumber].TaskID;
-		break;
-	case TaskType::Shared: // TODO:
-	default:
-		break;
-	}
-
-	std::string query = StringFormat("DELETE FROM character_activities WHERE charid=%i AND taskid = %i",
-					 characterID, task_id);
-	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
-		LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
-		    results.ErrorMessage().c_str());
-		return;
-	}
-	Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
-
-	query = StringFormat("DELETE FROM character_tasks WHERE charid=%i AND taskid = %i AND type=%i", characterID,
-			     task_id, static_cast<int>(type));
-	results = database.QueryDatabase(query);
-	if (!results.Success())
-		LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
-		    results.ErrorMessage().c_str());
-
-	Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
-
-	switch (type) {
-	case TaskType::Task:
 		ActiveTask.TaskID = TASKSLOTEMPTY;
 		break;
-	case TaskType::Shared:
-		break; // TODO: shared tasks
+	}
 	case TaskType::Quest:
-		ActiveQuests[sequenceNumber].TaskID = TASKSLOTEMPTY;
-		ActiveTaskCount--;
+	{
+		if (sequenceNumber < MAXACTIVEQUESTS) {
+			task_id = ActiveQuests[sequenceNumber].TaskID;
+			ActiveQuests[sequenceNumber].TaskID = TASKSLOTEMPTY;
+			ActiveTaskCount--;
+		}
 		break;
+	}
+	case TaskType::Shared:
+	{
+		SharedTaskState task_state;
+		task_state.RemoveSelf(c, ActiveSharedTask->GetID());
+		ActiveSharedTask = nullptr;
+		break;
+	}
 	default:
 		break;
+	}
+
+	if (type != TaskType::Shared) {
+		std::string query = StringFormat("DELETE FROM character_activities WHERE charid=%i AND taskid = %i",
+			characterID, task_id);
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
+				results.ErrorMessage().c_str());
+			return;
+		}
+		Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
+
+		query = StringFormat("DELETE FROM character_tasks WHERE charid=%i AND taskid = %i AND type=%i", characterID,
+			task_id, static_cast<int>(type));
+		results = database.QueryDatabase(query);
+		if (!results.Success())
+			LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
+				results.ErrorMessage().c_str());
+
+		Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
 	}
 }
 
@@ -4301,5 +4303,50 @@ void SharedTaskState::UpdateActivity(int activity_id, int value)
 								  Task->Activity[activity_id].Optional);
 		}
 	}
+}
+
+void SharedTaskState::AddMember(std::string name, Mob* entity, bool leader) {
+	members.push_back({ name, entity, leader });
+	if (leader)
+		leader_name = name;
+}
+/*
+ *  remove self now, let world handle the rest
+*/
+void SharedTaskState::RemoveSelf(Client* c, int shared_task_id) {
+	std::string name = c->GetName();
+	int characterID = c->CharacterID();
+
+	// cleanup database
+	std::string query = StringFormat("DELETE FROM shared_task_members WHERE character_id=%i AND shared_task_id = %i",
+		characterID, shared_task_id);
+	auto results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		LogError("[TASKS] Error in SharedTaskState::RemoveSelf [{}]",
+			results.ErrorMessage().c_str());
+		return;
+	}
+	Log(Logs::General, Logs::Tasks, "[UPDATE] RemoveSelf: %s", query.c_str());
+
+	// cleanup memory
+	std::vector<SharedTaskMember>::iterator it = members.begin();
+	while (it != members.end()) {
+		if (it->name == name) {
+			members.erase(it);
+			break;
+		}
+	}
+
+	// world handles rest
+	SendRemoveMember(c, shared_task_id);
+}
+
+void SharedTaskState::SendRemoveMember(Client* c, int shared_task_id) {
+	auto pack = new ServerPacket(ServerOP_TaskRemovePlayer, sizeof(ServerSharedTaskMember_Struct));
+	auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
+	update->id = shared_task_id;
+	strn0cpy(update->name, c->GetName(), sizeof(update->name));
+	worldserver.SendPacket(pack);
+	safe_delete(pack);
 }
 
