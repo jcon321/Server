@@ -262,21 +262,21 @@ bool SharedTaskManager::LoadSharedTasks(int single_task)
 
 	if (single_task == 0) {
 		query =
-		    StringFormat("SELECT `id`, `type`, `duration`, `duration_code`, `title`, `description`, `reward`, "
+			fmt::format("SELECT `id`, `type`, `duration`, `duration_code`, `title`, `description`, `reward`, "
 				 "`rewardid`, `cashreward`, `xpreward`, `rewardmethod`, `faction_reward`, `minlevel`, "
 				 "`maxlevel`, `repeatable`, `completion_emote`, `reward_points`, `reward_type`, "
 				 "`replay_group`, `min_players`, `max_players`, `task_lock_step`, `instance_zone_id`, "
 				 "`zone_version`, `zone_in_zone_id`, `zone_in_x`, `zone_in_y`, `zone_in_object_id`, "
-				 "`dest_x`, `dest_y`, `dest_z`, `dest_h` FROM `tasks` WHERE `type` = %i",
+				 "`dest_x`, `dest_y`, `dest_z`, `dest_h` FROM `tasks` WHERE `type` = {}",
 				 static_cast<int>(TaskType::Shared));
 	} else {
 		query =
-		    StringFormat("SELECT `id`, `type`, `duration`, `duration_code`, `title`, `description`, `reward`, "
+			fmt::format("SELECT `id`, `type`, `duration`, `duration_code`, `title`, `description`, `reward`, "
 				 "`rewardid`, `cashreward`, `xpreward`, `rewardmethod`, `faction_reward`, `minlevel`, "
 				 "`maxlevel`, `repeatable`, `completion_emote`, `reward_points`, `reward_type`, "
 				 "`replay_group`, `min_players`, `max_players`, `task_lock_step`, `instance_zone_id`, "
 				 "`zone_version`, `zone_in_zone_id`, `zone_in_x`, `zone_in_y`, `zone_in_object_id`, "
-				 "`dest_x`, `dest_y`, `dest_z`, `dest_h` FROM `tasks` WHERE `id` = %i AND `type` = %i",
+				 "`dest_x`, `dest_y`, `dest_z`, `dest_h` FROM `tasks` WHERE `id` = {} AND `type` = {}",
 				 single_task, static_cast<int>(TaskType::Shared));
 	}
 	auto results = database.QueryDatabase(query);
@@ -326,18 +326,18 @@ bool SharedTaskManager::LoadSharedTasks(int single_task)
 
 	// hmm need to limit to shared tasks only ...
 	if (single_task == 0)
-		query = StringFormat(
+		query = fmt::format(
 		    "SELECT `taskid`, `step`, `activityid`, `activitytype`, `target_name`, `item_list`, `skill_list`, "
 		    "`spell_list`, `description_override`, `goalid`, `goalmethod`, `goalcount`, `delivertonpc`, "
-		    "`zones`, `optional` FROM `task_activities` WHERE `activityid` < %i AND `taskid` IN (SELECT `id` "
-		    "FROM `tasks` WHERE `type` = %i) ORDER BY taskid, activityid ASC",
+		    "`zones`, `optional` FROM `task_activities` WHERE `activityid` < {} AND `taskid` IN (SELECT `id` "
+		    "FROM `tasks` WHERE `type` = {}) ORDER BY taskid, activityid ASC",
 		    MAXACTIVITIESPERTASK, static_cast<int>(TaskType::Shared));
 	else
-		query = StringFormat(
+		query = fmt::format(
 		    "SELECT `taskid`, `step`, `activityid`, `activitytype`, `target_name`, `item_list`, `skill_list`, "
 		    "`spell_list`, `description_override`, `goalid`, `goalmethod`, `goalcount`, `delivertonpc`, "
-		    "`zones`, `optional` FROM `task_activities` WHERE `taskid` = %i AND `activityid` < %i AND `taskid` "
-		    "IN (SELECT `id` FROM `tasks` WHERE `type` = %i) ORDER BY taskid, activityid ASC",
+		    "`zones`, `optional` FROM `task_activities` WHERE `taskid` = {} AND `activityid` < {} AND `taskid` "
+		    "IN (SELECT `id` FROM `tasks` WHERE `type` = {}) ORDER BY taskid, activityid ASC",
 		    single_task, MAXACTIVITIESPERTASK, static_cast<int>(TaskType::Shared));
 	results = database.QueryDatabase(query);
 	if (!results.Success()) {
@@ -490,17 +490,17 @@ void SharedTaskManager::DestroySharedTask(int id)
 
 	// remove from database
 	const char* ERR_MYSQLERROR = "[TASKS]Error in TaskManager::DestroySharedTask %s";
-	std::string query = StringFormat("DELETE FROM shared_task_activities WHERE shared_task_id = %i", id);
+	std::string query = fmt::format("DELETE FROM shared_task_activities WHERE shared_task_id = {}", id);
 	auto results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
 	}
-	query = StringFormat("DELETE FROM shared_task_state WHERE task_id = %i", id);
+	query = fmt::format("DELETE FROM shared_task_state WHERE task_id = {}", id);
 	results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
 	}
-	query = StringFormat("DELETE FROM shared_task_members WHERE shared_task_id = %i", id);
+	query = fmt::format("DELETE FROM shared_task_members WHERE shared_task_id = {}", id);
 	results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
@@ -626,7 +626,7 @@ void SharedTask::RemoveMember(std::string name)
 	}
 	
 	// cleanup database 
-	std::string query = StringFormat("DELETE FROM shared_task_members WHERE character_id=%i AND shared_task_id = %i", char_id, task_id);
+	std::string query = fmt::format("DELETE FROM shared_task_members WHERE character_id= {} AND shared_task_id = {}", char_id, task_id);
 	auto results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		LogError("[TASKS] Error in SharedTask::RemoveMember [{}]",
