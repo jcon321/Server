@@ -490,17 +490,17 @@ void SharedTaskManager::DestroySharedTask(int id)
 
 	// remove from database
 	const char* ERR_MYSQLERROR = "[TASKS]Error in TaskManager::DestroySharedTask %s";
-	std::string query = fmt::format("DELETE FROM shared_task_activities WHERE shared_task_id = {}", id);
+	std::string query = fmt::format("DELETE FROM `shared_task_activities` WHERE `shared_task_id` = {}", id);
 	auto results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
 	}
-	query = fmt::format("DELETE FROM shared_task_state WHERE task_id = {}", id);
+	query = fmt::format("DELETE FROM `shared_task_state` WHERE `id` = {}", id);
 	results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
 	}
-	query = fmt::format("DELETE FROM shared_task_members WHERE shared_task_id = {}", id);
+	query = fmt::format("DELETE FROM `shared_task_members` WHERE `shared_task_id` = {}", id);
 	results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, ERR_MYSQLERROR, results.ErrorMessage().c_str());
@@ -626,7 +626,7 @@ void SharedTask::RemoveMember(std::string name)
 	}
 	
 	// cleanup database 
-	std::string query = fmt::format("DELETE FROM shared_task_members WHERE character_id= {} AND shared_task_id = {}", char_id, task_id);
+	std::string query = fmt::format("DELETE FROM `shared_task_members` WHERE `character_id` = {} AND `shared_task_id` = {}", char_id, id);
 	auto results = database.QueryDatabase(query);
 	if (!results.Success()) {
 		LogError("[TASKS] Error in SharedTask::RemoveMember [{}]",
@@ -662,7 +662,7 @@ void SharedTask::RemoveMember(std::string name)
 
 	// if this is final member just Destroy the task now and return
 	if (members.list.empty()) {
-		shared_tasks.DestroySharedTask(task_id);
+		shared_tasks.DestroySharedTask(id);
 		return;
 	}
 
