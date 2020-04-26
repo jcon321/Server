@@ -612,18 +612,26 @@ void SharedTask::MemberLeftGame(ClientListEntry *cle)
 * jc-todo - Handle switching leader if so.
 * jc-todo - Handle 2 minute min required players
 */
-void SharedTask::RemoveMember(std::string name) 
+void SharedTask::RemoveMember(std::string name)
 {
 	LogInfo("jc-shared CancelTask #3 --- void SharedTask::RemoveMember(std::string name) in shared_tasks.cpp in world");
 	int char_id = 0;
 	// cleanup members.list
-	std::vector<SharedTaskMember>::iterator itm = members.list.begin();
-	while (itm != members.list.end()) {
-		if (itm->name == name) {
-			char_id = itm->char_id;
-			members.list.erase(itm);
-			break;
-		}
+
+	auto itm = std::find_if(members.list.begin(), members.list.end(), [&](SharedTaskMember const& m) {return m.name == name; });
+	if (itm != members.list.end())
+	{
+		char_id = itm->char_id;
+		members.list.erase(itm);
+	}
+	
+	// cleanup database 
+	std::string query = StringFormat("DELETE FROM shared_task_members WHERE character_id=%i AND shared_task_id = %i", char_id, task_id);
+	auto results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		LogError("[TASKS] Error in SharedTask::RemoveMember [{}]",
+			results.ErrorMessage().c_str());
+		return;
 	}
 
 	// remove from instance
@@ -632,13 +640,25 @@ void SharedTask::RemoveMember(std::string name)
 	}
 
 	// remove from char_ids
-	std::vector<int>::iterator itc = std::find(char_ids.begin(), char_ids.end(), char_id);
+	auto itc = std::find(char_ids.begin(), char_ids.end(), char_id);
 	if (itc != char_ids.end())
 		char_ids.erase(itc);
 
 	// cleanup cle
-	auto cle_member = client_list.FindCharacter(leader_name.c_str());
+	auto cle_member = client_list.FindCharacter(name.c_str());
 	cle_member->SetCurrentSharedTaskID(0);
+
+	// tell zone to cleanup now
+	auto pc = client_list.FindCharacter(name.c_str());
+	if (pc) {
+		// failure TODO: appropriate message
+		auto pack = new ServerPacket(ServerOP_TaskRemovePlayer, sizeof(ServerSharedTaskMember_Struct));
+		auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
+		update->id = task_id;
+		strn0cpy(update->name, name.c_str(), sizeof(update->name));
+		zoneserver_list.SendPacket(pc->zone(), pc->instance(), pack);
+		safe_delete(pack);
+	} // oh well
 
 	// if this is final member just Destroy the task now and return
 	if (members.list.empty()) {
@@ -649,6 +669,7 @@ void SharedTask::RemoveMember(std::string name)
 	// if leader pass onto next member (separate function)
 
 	// is task still above min req players (separate function)
+
 }
 
 /*

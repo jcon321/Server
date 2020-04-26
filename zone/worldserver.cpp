@@ -2084,6 +2084,20 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		task->UpdateActivity(activity_id, value);
 		break;
 	}
+	case ServerOP_TaskRemovePlayer:
+	{
+		if (!pack)
+			return;
+		if (pack->size != sizeof(ServerSharedTaskMember_Struct))
+			return;
+
+		auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
+
+		auto client = entity_list.GetClientByName(update->name);
+		if (client)
+			client->RemoveFromSharedTask();
+		break;
+	}
 	default: {
 		std::cout << " Unknown ZSopcode:" << (int)pack->opcode;
 		std::cout << " size:" << pack->size << std::endl;

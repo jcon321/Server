@@ -3573,8 +3573,7 @@ void ClientTaskState::RemoveTask(Client *c, int sequenceNumber, TaskType type)
 	case TaskType::Shared:
 	{
 		SharedTaskState task_state;
-		task_state.RemoveSelf(c, ActiveSharedTask->GetID());
-		ActiveSharedTask = nullptr;
+		task_state.SendRemoveMember(c, ActiveSharedTask->GetID());
 		break;
 	}
 	default:
@@ -3940,6 +3939,16 @@ void ClientTaskState::AddToSharedTask(Client *c, int TaskID)
 	ActiveSharedTask = task;
 
 	return;
+}
+
+/*
+ * this should only be called when zone recieves confirmation from world (aka only from worldserver.cpp)
+*/
+void ClientTaskState::RemoveFromSharedTask(Client* c) {
+	SharedTaskState task_state;
+	task_state.RemoveMember(c->GetName());
+
+	ActiveSharedTask = nullptr;
 }
 
 void ClientTaskState::ProcessTaskProximities(Client *c, float X, float Y, float Z) {
@@ -4310,37 +4319,16 @@ void SharedTaskState::AddMember(std::string name, Mob* entity, bool leader) {
 	if (leader)
 		leader_name = name;
 }
-/*
- *  remove self now, let world handle the rest
-*/
-void SharedTaskState::RemoveSelf(Client* c, int shared_task_id) {
-	std::string name = c->GetName();
-	int characterID = c->CharacterID();
 
-	// cleanup database
-	std::string query = StringFormat("DELETE FROM shared_task_members WHERE character_id=%i AND shared_task_id = %i",
-		characterID, shared_task_id);
-	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
-		LogError("[TASKS] Error in SharedTaskState::RemoveSelf [{}]",
-			results.ErrorMessage().c_str());
-		return;
-	}
-	Log(Logs::General, Logs::Tasks, "[UPDATE] RemoveSelf: %s", query.c_str());
-
-	// cleanup memory
-	std::vector<SharedTaskMember>::iterator it = members.begin();
-	while (it != members.end()) {
-		if (it->name == name) {
-			members.erase(it);
-			break;
-		}
-	}
-
-	// world handles rest
-	SendRemoveMember(c, shared_task_id);
+void SharedTaskState::RemoveMember(std::string name) {
+	auto itm = std::find_if(members.begin(), members.end(), [&](SharedTaskMember const& m) {return m.name == name; });
+	if (itm != members.end())
+		members.erase(itm);
 }
 
+/*
+ * Tell world we want to remove a member
+ */
 void SharedTaskState::SendRemoveMember(Client* c, int shared_task_id) {
 	auto pack = new ServerPacket(ServerOP_TaskRemovePlayer, sizeof(ServerSharedTaskMember_Struct));
 	auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
@@ -4349,4 +4337,5 @@ void SharedTaskState::SendRemoveMember(Client* c, int shared_task_id) {
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
 }
+
 

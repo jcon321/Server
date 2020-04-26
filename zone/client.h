@@ -1019,6 +1019,7 @@ public:
 	inline void AssignTask(int TaskID, int NPCID, bool enforce_level_requirement = false, bool shared = false) { if (taskstate) !shared ? taskstate->AcceptNewTask(this, TaskID, NPCID, enforce_level_requirement) : taskstate->RequestSharedTask(this, TaskID, NPCID, enforce_level_requirement); }
 	inline void AssignSharedTask(int TaskID, int NPCID, int id, int instance_id, int accepted_time, std::vector<std::string> &members) { if (taskstate) taskstate->AcceptNewSharedTask(this, TaskID, NPCID, id, instance_id, accepted_time, members); }
 	inline void AddToSharedTask(int TaskID) { if (taskstate) taskstate->AddToSharedTask(this, TaskID); }
+	inline void RemoveFromSharedTask() { if (taskstate) taskstate->RemoveFromSharedTask(this); }
 	inline int ActiveSpeakTask(int NPCID) { if(taskstate) return taskstate->ActiveSpeakTask(NPCID); else return 0; }
 	inline int ActiveSpeakActivity(int NPCID, int TaskID) { if(taskstate) return taskstate->ActiveSpeakActivity(NPCID, TaskID); else return 0; }
 	inline void FailTask(int TaskID) { if(taskstate) taskstate->FailTask(this, TaskID); }

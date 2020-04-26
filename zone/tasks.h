@@ -125,8 +125,8 @@ public:
 	void SendActivityUpdate(int activity_id, int value = 1);
 
 	void AddMember(std::string name, Mob* entity = nullptr, bool leader = false);
+	void RemoveMember(std::string name);
 
-	void RemoveSelf(Client* c, int shared_task_id);
 	void SendRemoveMember(Client* c, int shared_task_id);
 
 	void SendMembersList(Client *to) const;
@@ -201,6 +201,8 @@ public:
 	inline bool HasFreeTaskSlot() { return ActiveTask.TaskID == TASKSLOTEMPTY; }
 
 	inline SharedTaskState *GetSharedTask() { return ActiveSharedTask ; }
+	
+	void RemoveFromSharedTask(Client* c);
 
 	friend class TaskManager;
 
