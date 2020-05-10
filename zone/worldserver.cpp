@@ -2094,8 +2094,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
 
 		auto client = entity_list.GetClientByName(update->name);
-		if (client)
+		if (client) {
+			SharedTaskState *task_state = client->GetSharedTask();
 			client->RemoveFromSharedTask();
+			// inform others this player was removed
+			task_state->SendMembersListAll();
+		}
+
 		break;
 	}
 	default: {

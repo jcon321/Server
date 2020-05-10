@@ -3573,7 +3573,7 @@ void ClientTaskState::RemoveTask(Client *c, int sequenceNumber, TaskType type)
 	case TaskType::Shared:
 	{
 		SharedTaskState task_state;
-		task_state.SendRemoveMember(c, ActiveSharedTask->GetID());
+		task_state.SendRemoveMember(c->GetName(), ActiveSharedTask->GetID());
 		break;
 	}
 	default:
@@ -3945,10 +3945,26 @@ void ClientTaskState::AddToSharedTask(Client *c, int TaskID)
  * this should only be called when zone recieves confirmation from world (aka only from worldserver.cpp)
 */
 void ClientTaskState::RemoveFromSharedTask(Client* c) {
-	SharedTaskState task_state;
-	task_state.RemoveMember(c->GetName());
+	SharedTaskState *task_state = c->GetSharedTask();
+	task_state->RemoveMember(c->GetName());
 
 	ActiveSharedTask = nullptr;
+}
+
+/*
+ * this is /taskremoveplayer or Remove player button in shared task window
+*/
+void ClientTaskState::RequestRemovePlayer(const char* name) {
+	LogTasks("jc-shared TaskRemovePlayer #2 --- ClientTaskState::RequestRemovePlayer(const char* name) in tasks.cpp");
+	if (ActiveSharedTask != nullptr) {
+		SharedTaskState task_state;
+		task_state.SendRemoveMember(name, ActiveSharedTask->GetID());
+	}
+	else {
+		// hmm this could log a lot since a player could type /taskremoveplayer whenever they want
+		Log(Logs::General, Logs::Tasks, "Failure trying to remove player when no active shared task");
+		return;
+	}
 }
 
 void ClientTaskState::ProcessTaskProximities(Client *c, float X, float Y, float Z) {
@@ -4259,6 +4275,15 @@ void SharedTaskState::SendActivityUpdate(int activity_id, int value)
 	safe_delete(pack);
 }
 
+void SharedTaskState::SendMembersListAll() {
+	for (auto&& m : members) {
+		if (m.entity && m.entity->IsClient()) {
+			auto c = m.entity->CastToClient();
+			SendMembersList(c);
+		}
+	}
+}
+
 void SharedTaskState::SendMembersList(Client *to) const
 {
 	if (!to)
@@ -4320,7 +4345,7 @@ void SharedTaskState::AddMember(std::string name, Mob* entity, bool leader) {
 		leader_name = name;
 }
 
-void SharedTaskState::RemoveMember(std::string name) {
+void SharedTaskState::RemoveMember(const char *name) {
 	auto itm = std::find_if(members.begin(), members.end(), [&](SharedTaskMember const& m) {return m.name == name; });
 	if (itm != members.end())
 		members.erase(itm);
@@ -4329,11 +4354,11 @@ void SharedTaskState::RemoveMember(std::string name) {
 /*
  * Tell world we want to remove a member
  */
-void SharedTaskState::SendRemoveMember(Client* c, int shared_task_id) {
+void SharedTaskState::SendRemoveMember(const char* name, int shared_task_id) {
 	auto pack = new ServerPacket(ServerOP_TaskRemovePlayer, sizeof(ServerSharedTaskMember_Struct));
 	auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
 	update->id = shared_task_id;
-	strn0cpy(update->name, c->GetName(), sizeof(update->name));
+	strn0cpy(update->name, name, sizeof(update->name));
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
 }

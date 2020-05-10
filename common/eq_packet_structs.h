@@ -3998,6 +3998,12 @@ struct TaskMemberInvite_Struct {
 	char	name[64];
 };
 
+struct TaskMemberRemove_Struct {
+	uint32	unknown00;   // 01 00 00 00 if /taskremoveplayer... 00 00 00 00 if 'Remove Player' button
+	uint32	unknown04;   // 00 00 00 00 if /taskremoveplayer... 01 00 00 00 if 'Remove Player' button
+	char	name[64];
+};
+
 enum { VoiceMacroTell = 1, VoiceMacroGroup = 2, VoiceMacroRaid = 3 };
 
 struct VoiceMacroIn_Struct {

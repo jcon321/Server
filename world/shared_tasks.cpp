@@ -608,7 +608,7 @@ void SharedTask::MemberLeftGame(ClientListEntry *cle)
 }
 
 /*
-* Removes a player from this shared task and instance (this specific player has already been removed from shared_task_members table by zone)
+* Zone has requested to Remove a player from this shared task and instance 
 * jc-todo - Handle switching leader if so.
 * jc-todo - Handle 2 minute min required players
 */
@@ -625,30 +625,25 @@ void SharedTask::RemoveMember(std::string name)
 		members.list.erase(itm);
 	}
 	
-	// cleanup database 
-	std::string query = fmt::format("DELETE FROM `shared_task_members` WHERE `character_id` = {} AND `shared_task_id` = {}", char_id, id);
-	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
-		LogError("[TASKS] Error in SharedTask::RemoveMember [{}]",
-			results.ErrorMessage().c_str());
-		return;
-	}
 
 	// remove from instance
 	if (instance_id) {
 		// TODO shared_tasks.RemovePlayerFromInsance(instance_id, char_id);
 	}
 
+
 	// remove from char_ids
 	auto itc = std::find(char_ids.begin(), char_ids.end(), char_id);
 	if (itc != char_ids.end())
 		char_ids.erase(itc);
 
+
 	// cleanup cle
 	auto cle_member = client_list.FindCharacter(name.c_str());
 	cle_member->SetCurrentSharedTaskID(0);
 
-	// tell zone to cleanup now
+
+	// tell zone to cleanup now (zone will handle removing the player and informing existing players of the update so therefore send to all zones)
 	auto pc = client_list.FindCharacter(name.c_str());
 	if (pc) {
 		// failure TODO: appropriate message
@@ -656,9 +651,10 @@ void SharedTask::RemoveMember(std::string name)
 		auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
 		update->id = task_id;
 		strn0cpy(update->name, name.c_str(), sizeof(update->name));
-		zoneserver_list.SendPacket(pc->zone(), pc->instance(), pack);
+		zoneserver_list.SendPacket(pack);
 		safe_delete(pack);
 	} // oh well
+
 
 	// if this is final member just Destroy the task now and return
 	if (members.list.empty()) {
@@ -670,6 +666,10 @@ void SharedTask::RemoveMember(std::string name)
 
 	// is task still above min req players (separate function)
 
+
+	// cleanup database 
+	members.update = true;
+	Save();
 }
 
 /*
@@ -746,7 +746,6 @@ void SharedTask::Save()
 	// we got stuff to write
 	if (activity_count != 0) {
 		query = fmt::to_string(out);
-		out.clear();
 		auto res = database.QueryDatabase(query);
 		if (!res.Success()) {
 			Log(Logs::General, Logs::Error, ERR_MYSQLERROR, res.ErrorMessage().c_str());
@@ -756,6 +755,7 @@ void SharedTask::Save()
 				task_state.Activity[i].Updated = false;
 		}
 	}
+	out.clear();
 
 	if (members.update) {
 		query = fmt::format("DELETE FROM `shared_task_members` WHERE `shared_task_id` = {}", id);

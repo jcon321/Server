@@ -125,10 +125,11 @@ public:
 	void SendActivityUpdate(int activity_id, int value = 1);
 
 	void AddMember(std::string name, Mob* entity = nullptr, bool leader = false);
-	void RemoveMember(std::string name);
+	void RemoveMember(const char *name);
 
-	void SendRemoveMember(Client* c, int shared_task_id);
+	void SendRemoveMember(const char* name, int shared_task_id);
 
+	void SendMembersListAll();
 	void SendMembersList(Client *to) const;
 
 	void UpdateActivity(int activity_id, int value);
@@ -203,6 +204,7 @@ public:
 	inline SharedTaskState *GetSharedTask() { return ActiveSharedTask ; }
 	
 	void RemoveFromSharedTask(Client* c);
+	void RequestRemovePlayer(const char* name);
 
 	friend class TaskManager;
 

@@ -369,6 +369,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_TargetCommand] = &Client::Handle_OP_TargetCommand;
 	ConnectedOpcodes[OP_TargetMouse] = &Client::Handle_OP_TargetMouse;
 	ConnectedOpcodes[OP_TaskHistoryRequest] = &Client::Handle_OP_TaskHistoryRequest;
+	ConnectedOpcodes[OP_TaskRemovePlayer] = &Client::Handle_OP_TaskRemovePlayer;
 	ConnectedOpcodes[OP_Taunt] = &Client::Handle_OP_Taunt;
 	ConnectedOpcodes[OP_TestBuff] = &Client::Handle_OP_TestBuff;
 	ConnectedOpcodes[OP_TGB] = &Client::Handle_OP_TGB;
@@ -13722,6 +13723,21 @@ void Client::Handle_OP_TaskHistoryRequest(const EQApplicationPacket *app)
 
 	if (RuleB(TaskSystem, EnableTaskSystem) && taskstate)
 		taskstate->SendTaskHistory(this, ths->TaskIndex);
+}
+
+void Client::Handle_OP_TaskRemovePlayer(const EQApplicationPacket* app)
+{
+	LogTasks("jc-shared TaskRemovePlayer #1 --- Client::Handle_OP_TaskRemovePlayer(const EQApplicationPacket* app) in client_packet.cpp");
+	LogDebug(DumpPacketToString(app));
+	if (app->size != sizeof(TaskMemberRemove_Struct)) {
+		LogDebug("Size mismatch in OP_TaskRemovePlayer expected [{}] got [{}]", sizeof(TaskMemberRemove_Struct), app->size);
+		DumpPacket(app);
+		return;
+	}
+	TaskMemberRemove_Struct* ths = (TaskMemberRemove_Struct*)app->pBuffer;
+
+	if (RuleB(TaskSystem, EnableTaskSystem) && taskstate)
+		taskstate->RequestRemovePlayer(ths->name);
 }
 
 void Client::Handle_OP_Taunt(const EQApplicationPacket *app)
