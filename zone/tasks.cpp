@@ -3948,8 +3948,12 @@ void ClientTaskState::RemoveFromSharedTask(Client* c) {
 	SharedTaskState *task_state = c->GetSharedTask();
 	task_state->RemoveMember(c->GetName());
 
+	// RemoveFromDB is false here because this is called after world has already cleaned up
+	this->CancelTask(c, 0, TaskType::Shared, false);
+
 	ActiveSharedTask = nullptr;
 }
+
 
 /*
  * this is /taskremoveplayer or Remove player button in shared task window
