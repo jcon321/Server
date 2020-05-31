@@ -170,7 +170,8 @@ public:
 	ActivityState GetTaskActivityState(TaskType type, int index, int ActivityID);
 	void UpdateTaskActivity(Client *c, int TaskID, int ActivityID, int Count, bool ignore_quest_update = false);
 	void ResetTaskActivity(Client *c, int TaskID, int ActivityID);
-	void CancelTask(Client *c, int SequenceNumber, TaskType type, bool RemoveFromDB = true);
+	void CancelTask(Client *c, int SequenceNumber, TaskType type);
+	void SendCancelTask(Client* c, int SequenceNumber, TaskType type);
 	void CancelAllTasks(Client *c);
 	void RemoveTask(Client *c, int SequenceNumber, TaskType type);
 	bool UpdateTasksByNPC(Client *c, int ActivityType, int NPCTypeID);

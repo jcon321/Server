@@ -3518,20 +3518,34 @@ void ClientTaskState::CancelAllTasks(Client *c) {
 	// It removes tasks from the in-game client state ready for them to be
 	// resent to the client, in case an updated task fails to load
 
-	CancelTask(c, 0, TaskType::Task, false);
+	SendCancelTask(c, 0, TaskType::Task);
 	ActiveTask.TaskID = TASKSLOTEMPTY;
+	ActiveSharedTask = nullptr;
 
 	for(int i=0; i<MAXACTIVEQUESTS; i++)
 		if(ActiveQuests[i].TaskID != TASKSLOTEMPTY) {
-			CancelTask(c, i, TaskType::Quest, false);
+			SendCancelTask(c, i, TaskType::Quest);
 			ActiveQuests[i].TaskID = TASKSLOTEMPTY;
 		}
 
-	// TODO: shared
 }
 
-void ClientTaskState::CancelTask(Client *c, int SequenceNumber, TaskType type, bool RemoveFromDB)
+void ClientTaskState::CancelTask(Client *c, int SequenceNumber, TaskType type)
 {
+	LogTasks("jc-shared CancelTask #1 --- ClientTaskState::CancelTask(Client *c, int SequenceNumber, TaskType type, bool RemoveFromDB) in tasks.cpp");
+
+	// for shared we request from world to cleanup before removing the client
+	if (type == TaskType::Shared) {
+		RequestRemovePlayer(c->GetName());
+	}
+	else {
+		SendCancelTask(c, SequenceNumber, type);
+		RemoveTask(c, SequenceNumber, type);
+	}
+
+}
+
+void ClientTaskState::SendCancelTask(Client* c, int SequenceNumber, TaskType type) {
 	auto outapp = new EQApplicationPacket(OP_CancelTask, sizeof(CancelTask_Struct));
 
 	CancelTask_Struct* cts = (CancelTask_Struct*)outapp->pBuffer;
@@ -3542,9 +3556,6 @@ void ClientTaskState::CancelTask(Client *c, int SequenceNumber, TaskType type, b
 
 	c->QueuePacket(outapp);
 	safe_delete(outapp);
-
-	if(RemoveFromDB)
-		RemoveTask(c, SequenceNumber, type);
 }
 
 void ClientTaskState::RemoveTask(Client *c, int sequenceNumber, TaskType type)
@@ -3570,36 +3581,30 @@ void ClientTaskState::RemoveTask(Client *c, int sequenceNumber, TaskType type)
 		}
 		break;
 	}
-	case TaskType::Shared:
-	{
-		SharedTaskState task_state;
-		task_state.SendRemoveMember(c->GetName(), ActiveSharedTask->GetID());
-		break;
-	}
 	default:
 		break;
 	}
 
-	if (type != TaskType::Shared) {
-		std::string query = StringFormat("DELETE FROM character_activities WHERE charid=%i AND taskid = %i",
-			characterID, task_id);
-		auto results = database.QueryDatabase(query);
-		if (!results.Success()) {
-			LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
-				results.ErrorMessage().c_str());
-			return;
-		}
-		Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
-
-		query = StringFormat("DELETE FROM character_tasks WHERE charid=%i AND taskid = %i AND type=%i", characterID,
-			task_id, static_cast<int>(type));
-		results = database.QueryDatabase(query);
-		if (!results.Success())
-			LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
-				results.ErrorMessage().c_str());
-
-		Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
+	
+	std::string query = StringFormat("DELETE FROM character_activities WHERE charid=%i AND taskid = %i",
+		characterID, task_id);
+	auto results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
+			results.ErrorMessage().c_str());
+		return;
 	}
+	Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
+
+	query = StringFormat("DELETE FROM character_tasks WHERE charid=%i AND taskid = %i AND type=%i", characterID,
+		task_id, static_cast<int>(type));
+	results = database.QueryDatabase(query);
+	if (!results.Success())
+		LogError("[TASKS] Error in CientTaskState::CancelTask [{}]",
+			results.ErrorMessage().c_str());
+
+	Log(Logs::General, Logs::Tasks, "[UPDATE] CancelTask: %s", query.c_str());
+	
 }
 
 void ClientTaskState::AcceptNewTask(Client *c, int TaskID, int NPCID, bool enforce_level_requirement)
@@ -3948,8 +3953,7 @@ void ClientTaskState::RemoveFromSharedTask(Client* c) {
 	SharedTaskState *task_state = c->GetSharedTask();
 	task_state->RemoveMember(c->GetName());
 
-	// RemoveFromDB is false here because this is called after world has already cleaned up
-	this->CancelTask(c, 0, TaskType::Shared, false);
+	SendCancelTask(c, 0, TaskType::Shared);
 
 	ActiveSharedTask = nullptr;
 }
