@@ -2096,9 +2096,19 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		auto client = entity_list.GetClientByName(update->name);
 		if (client) {
 			SharedTaskState *task_state = client->GetSharedTask();
+			std::string task_name = taskmanager->GetTaskName(client->GetSharedTask()->GetTaskID());
+			// send remove message to client
+			client->MessageString(Chat::Yellow, SHARED_TASK_REMOVE_SELF, update->name, task_name.c_str());
+			// send cancel task to client
 			client->RemoveFromSharedTask();
-			// inform others this player was removed
+			
+			// update others members list
 			task_state->SendMembersListAll();
+			// inform other clients this player was removed
+			task_state->SendSharedTaskMessageAll(Chat::White, SHARED_TASK_REMOVE_PLAYER, update->name);
+
+			// yes, leader gets double messages (why?)
+			task_state->SendSharedTaskMessageLeader(Chat::Yellow, SHARED_TASK_REMOVE_SELF, update->name, task_name.c_str());
 		}
 
 		break;

@@ -128,7 +128,8 @@ public:
 	void RemoveMember(const char *name);
 
 	void SendRemoveMember(const char* name, int shared_task_id);
-
+	void SendSharedTaskMessageAll(uint32 type_id, uint32 message_id, const char* param1);
+	void SendSharedTaskMessageLeader(uint32 type_id, uint32 message_id, const char* param1, const char* param2);
 	void SendMembersListAll();
 	void SendMembersList(Client *to) const;
 

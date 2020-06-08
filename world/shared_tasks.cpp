@@ -651,6 +651,7 @@ void SharedTask::RemoveMember(std::string name)
 		auto update = (ServerSharedTaskMember_Struct*)pack->pBuffer;
 		update->id = task_id;
 		strn0cpy(update->name, name.c_str(), sizeof(update->name));
+		
 		zoneserver_list.SendPacket(pack);
 		safe_delete(pack);
 	} // oh well

@@ -3960,7 +3960,7 @@ void ClientTaskState::RemoveFromSharedTask(Client* c) {
 
 
 /*
- * this is /taskremoveplayer or Remove player button in shared task window
+ * this is shared tasks, we request to world, and only remove after confirmation
 */
 void ClientTaskState::RequestRemovePlayer(const char* name) {
 	LogTasks("jc-shared TaskRemovePlayer #2 --- ClientTaskState::RequestRemovePlayer(const char* name) in tasks.cpp");
@@ -4349,7 +4349,7 @@ void SharedTaskState::UpdateActivity(int activity_id, int value)
 
 void SharedTaskState::AddMember(std::string name, Mob* entity, bool leader) {
 	members.push_back({ name, entity, leader });
-	if (leader)
+	if (leader) 
 		leader_name = name;
 }
 
@@ -4369,6 +4369,24 @@ void SharedTaskState::SendRemoveMember(const char* name, int shared_task_id) {
 	strn0cpy(update->name, name, sizeof(update->name));
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
+}
+
+/*
+* Send a message to all clients of this shared task
+*/
+void SharedTaskState::SendSharedTaskMessageAll(uint32 type_id, uint32 message_id, const char* param1) {
+	for (auto&& m : members) {
+		if (m.entity && m.entity->IsClient()) {
+			auto c = m.entity->CastToClient();
+			c->MessageString(type_id, message_id, param1);
+		}
+	}
+}
+
+void SharedTaskState::SendSharedTaskMessageLeader(uint32 type_id, uint32 message_id, const char* param1, const char* param2) {
+	auto itm = std::find_if(members.begin(), members.end(), [&](SharedTaskMember const& m) {return m.leader == true; });
+	if (itm != members.end())
+		itm->entity->CastToClient()->MessageString(type_id, message_id, param1, param2);
 }
 
 
